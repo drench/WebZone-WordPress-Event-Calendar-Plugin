@@ -471,6 +471,52 @@ function ec3_get_events(
   echo "</ul>\n";
 }
 
+function ec3_events_as_xml()
+{
+  if(!ec3_check_installed(__('Upcoming Events','ec3')))
+    return;
+  global $ec3,$wpdb;
+
+  $events = $wpdb->get_results(
+    "SELECT DISTINCT
+       p.id AS id,
+       post_title,
+       start,
+       end,
+       u.$ec3->wp_user_nicename AS author,
+       allday
+     FROM $ec3->schedule s
+     LEFT JOIN $wpdb->posts p ON s.post_id=p.id
+     LEFT JOIN $wpdb->users u ON p.post_author = u.id
+     WHERE p.post_status='publish'
+     ORDER BY start"
+  );
+
+  $x = new XMLWriter();
+  $x->openMemory();
+  $x->startDocument('1.0');
+  $x->setIndent(4);
+  $x->startElement('ec3');
+    $x->writeAttribute('version', $ec3->version);
+
+  foreach($events as $event)
+  {
+    $x->startElement('event');
+      $x->writeAttribute('id', $event->id);
+      $x->writeAttribute('allday', $event->allday);
+        $x->writeElement('title', $event->post_title);
+        $x->writeElement('start', $event->start);
+        $x->writeElement('end', $event->end);
+        $x->writeElement('author', $event->author);
+    $x->endElement();
+  }
+
+  $x->endElement();
+  $x->endDocument();
+
+  return $x->flush();
+}
+
 define('EC3_DEFAULT_FORMAT_SINGLE','<tr><td colspan="3">%s</td></tr>');
 define('EC3_DEFAULT_FORMAT_RANGE','<tr><td class="ec3_start">%1$s</td>'
  . '<td class="ec3_to">%3$s</td><td class="ec3_end">%2$s</td></tr>');
