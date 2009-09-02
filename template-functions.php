@@ -517,6 +517,28 @@ function ec3_events_as_xml()
   return $x->flush();
 }
 
+function ec3_events_as_json()
+{
+  if(!ec3_check_installed(__('Upcoming Events','ec3')))
+    return;
+  global $ec3,$wpdb;
+
+  return json_encode($wpdb->get_results(
+    "SELECT DISTINCT
+       p.id AS id,
+       post_title,
+       start,
+       end,
+       u.$ec3->wp_user_nicename AS author,
+       allday
+     FROM $ec3->schedule s
+     LEFT JOIN $wpdb->posts p ON s.post_id=p.id
+     LEFT JOIN $wpdb->users u ON p.post_author = u.id
+     WHERE p.post_status='publish'
+     ORDER BY start"
+  ));
+}
+
 define('EC3_DEFAULT_FORMAT_SINGLE','<tr><td colspan="3">%s</td></tr>');
 define('EC3_DEFAULT_FORMAT_RANGE','<tr><td class="ec3_start">%1$s</td>'
  . '<td class="ec3_to">%3$s</td><td class="ec3_end">%2$s</td></tr>');
